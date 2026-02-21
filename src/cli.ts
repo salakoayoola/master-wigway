@@ -1,4 +1,5 @@
 import { Container, ProcessTerminal, Spacer, Text, TUI } from '@mariozechner/pi-tui';
+import { config as dotenvConfig } from 'dotenv';
 import type {
   AgentEvent,
   ApprovalDecision,
@@ -221,6 +222,9 @@ export async function runCli() {
     if (modelSelection.isInSelectionFlow() || agentRunner.pendingApproval || agentRunner.isProcessing) {
       return;
     }
+
+    // Hot-reload environment variables before every run
+    dotenvConfig({ override: true });
 
     await inputHistory.saveMessage(query);
     inputHistory.resetNavigation();
