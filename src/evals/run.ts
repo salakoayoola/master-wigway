@@ -217,7 +217,7 @@ Evaluate and provide:
 function createEvaluationRunner(sampleSize?: number) {
   return async function* runEvaluation(): AsyncGenerator<EvalProgressEvent, void, unknown> {
     // Load and parse dataset
-    const csvPath = path.join(__dirname, 'dataset', 'finance_agent.csv');
+    const csvPath = path.join(__dirname, 'dataset', 'ngx_agent.csv');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
     let examples = parseCSV(csvContent);
     const totalCount = examples.length;
