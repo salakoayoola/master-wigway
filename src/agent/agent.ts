@@ -12,7 +12,7 @@ import { buildFinalAnswerContext } from './final-answer-context.js';
 import { AgentToolExecutor } from './tool-executor.js';
 
 
-const DEFAULT_MODEL = 'gemini-3-flash-preview';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 const DEFAULT_MAX_ITERATIONS = 10;
 
 /**

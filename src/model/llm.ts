@@ -15,7 +15,7 @@ import { logger } from '@/utils';
 import { resolveProvider, getProviderById } from '@/providers';
 
 export const DEFAULT_PROVIDER = 'google';
-export const DEFAULT_MODEL = 'gemini-3-flash-preview';
+export const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 /**
  * Gets the fast model variant for the given provider.

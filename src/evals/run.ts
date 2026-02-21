@@ -141,7 +141,7 @@ function shuffleArray<T>(array: T[]): T[] {
 // ============================================================================
 
 async function target(inputs: { question: string }): Promise<{ answer: string }> {
-  const agent = Agent.create({ model: 'gemini-3-flash-preview', maxIterations: 10 });
+  const agent = Agent.create({ model: 'gemini-2.5-flash', maxIterations: 10 });
   let answer = '';
 
   for await (const event of agent.run(inputs.question)) {
@@ -154,7 +154,7 @@ async function target(inputs: { question: string }): Promise<{ answer: string }>
 }
 
 // ============================================================================
-// Correctness evaluator - LLM-as-judge using gemini-3-flash-preview
+// Correctness evaluator - LLM-as-judge using gemini-2.5-flash
 // ============================================================================
 
 const EvaluatorOutputSchema = z.object({
@@ -163,7 +163,7 @@ const EvaluatorOutputSchema = z.object({
 });
 
 const llm = new ChatOpenAI({
-  model: 'gemini-3-flash-preview',
+  model: 'gemini-2.5-flash',
   apiKey: process.env.OPENAI_API_KEY,
 });
 
