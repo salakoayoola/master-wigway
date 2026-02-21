@@ -3,7 +3,7 @@ name: dcf-valuation
 description: Performs discounted cash flow (DCF) valuation analysis to estimate intrinsic value per share. Triggers when user asks for fair value, intrinsic value, DCF, valuation, "what is X worth", price target, undervalued/overvalued analysis, or wants to compare current price to fundamental value.
 ---
 
-# DCF Valuation Skill
+# DCF Valuation Skill (Nigerian Market Adaptation)
 
 ## Workflow Checklist
 
@@ -22,7 +22,7 @@ DCF Analysis Progress:
 
 ## Step 1: Gather Financial Data
 
-Call the `financial_search` tool with these queries:
+Call the `ngx_search` and `ngx_metrics` tools with these queries:
 
 ### 1.1 Cash Flow History
 **Query:** `"[TICKER] annual cash flow statements for the last 5 years"`
@@ -53,7 +53,7 @@ Call the `financial_search` tool with these queries:
 ### 1.5 Current Price
 **Query:** `"[TICKER] price snapshot"`
 
-**Extract:** `price`
+**Extract:** `price` (in ₦)
 
 ### 1.6 Company Facts
 **Query:** `"[TICKER] company facts"`
@@ -71,20 +71,20 @@ Calculate 5-year FCF CAGR from cash flow history.
 **Growth rate selection:**
 - Stable FCF history → Use CAGR with 10-20% haircut
 - Volatile FCF → Weight analyst estimates more heavily
-- **Cap at 15%** (sustained higher growth is rare)
+- **Cap at 15%** (sustained higher growth is rare, especially in Nigeria's macro environment)
 
 ## Step 3: Estimate Discount Rate (WACC)
 
 **Use the `sector` from company facts** to select the appropriate base WACC range from [sector-wacc.md](sector-wacc.md).
 
-**Default assumptions:**
-- Risk-free rate: 4%
-- Equity risk premium: 5-6%
-- Cost of debt: 5-6% pre-tax (~4% after-tax at 30% tax rate)
+**Nigerian market assumptions:**
+- Risk-free rate: **18-19%** (current FGN 10-year bond yield)
+- Equity risk premium: **5-7%** (Nigerian market risk premium)
+- Cost of debt: **20-25%** pre-tax (Nigerian commercial lending rates), **~14-18%** after-tax at 30% CIT rate
 
 Calculate WACC using `debt_to_equity` for capital structure weights.
 
-**Reasonableness check:** WACC should be 2-4% below `return_on_invested_capital` for value-creating companies.
+**Reasonableness check:** WACC should be 2-4% below `return_on_invested_capital` for value-creating companies. Nigerian WACC will typically be **22-30%** due to high base rates.
 
 **Sector adjustments:** Apply adjustment factors from [sector-wacc.md](sector-wacc.md) based on company-specific characteristics.
 
@@ -92,15 +92,17 @@ Calculate WACC using `debt_to_equity` for capital structure weights.
 
 **Years 1-5:** Apply growth rate with 5% annual decay (multiply growth rate by 0.95, 0.90, 0.85, 0.80 for years 2-5). This reflects competitive dynamics.
 
-**Terminal value:** Use Gordon Growth Model with 2.5% terminal growth (GDP proxy).
+**Terminal value:** Use Gordon Growth Model with **3-4% terminal growth** (long-term Nigerian GDP growth proxy, adjusted for inflation targeting).
 
 ## Step 5: Calculate Present Value
 
 Discount all FCFs → sum for Enterprise Value → subtract Net Debt → divide by `outstanding_shares` for fair value per share.
 
+**All values in ₦ (Naira).** Present the final fair value as ₦X.XX per share.
+
 ## Step 6: Sensitivity Analysis
 
-Create 3×3 matrix: WACC (base ±1%) vs terminal growth (2.0%, 2.5%, 3.0%).
+Create 3×3 matrix: WACC (base ±2%) vs terminal growth (2.5%, 3.5%, 4.5%).
 
 ## Step 7: Validate Results
 
@@ -113,15 +115,19 @@ Before presenting, verify these sanity checks:
    - If >90%, growth rate may be too high
    - If <40%, near-term projections may be aggressive
 
-3. **Per-share cross-check**: Compare to `free_cash_flow_per_share × 15-25` as rough sanity check
+3. **Per-share cross-check**: Compare to `free_cash_flow_per_share × 10-15` as rough sanity check (lower multiples than US due to higher discount rates)
 
 If validation fails, reconsider assumptions before presenting results.
 
 ## Step 8: Output Format
 
 Present a structured summary including:
-1. **Valuation Summary**: Current price vs. fair value, upside/downside percentage
+1. **Valuation Summary**: Current price vs. fair value (in ₦), upside/downside percentage
 2. **Key Inputs Table**: All assumptions with their sources
-3. **Projected FCF Table**: 5-year projections with present values
-4. **Sensitivity Matrix**: 3×3 grid varying WACC (±1%) and terminal growth (2.0%, 2.5%, 3.0%)
-5. **Caveats**: Standard DCF limitations plus company-specific risks
+3. **Projected FCF Table**: 5-year projections with present values (in ₦)
+4. **Sensitivity Matrix**: 3×3 grid varying WACC (±2%) and terminal growth (2.5%, 3.5%, 4.5%)
+5. **Caveats**: Standard DCF limitations plus Nigeria-specific risks (FX volatility, inflation, regulatory environment, liquidity constraints)
+
+| Ticker   | Fair Value | Current | Upside |
+|----------|-----------|---------|--------|
+| DANGCEM  | ₦520.00   | ₦450.00 | +15.6% |

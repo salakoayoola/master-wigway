@@ -1,7 +1,7 @@
 import { fetchNgxPrices, ScrapedNgxPrice } from './prices';
 import { PriceRepository, NgxPrice } from '../../db/repositories/price-repo.js';
 import { searchNgxDisclosures } from './disclosure-scraper';
-import { extractTextFromPdf } from './pdf-parser';
+import { extractTextFromPdf, extractFinancialsWithLlm } from './pdf-parser';
 import { FundamentalRepository } from '../../db/repositories/fundamental-repo.js';
 
 export * from './prices';
@@ -63,7 +63,12 @@ export function createFinancialSearch(model: string) {
 }
 
 /**
- * Fetches metrics from DB or triggers the parsing pipeline.
+ * Fetches metrics from DB or triggers the full parsing pipeline:
+ *   1. Search disclosures for annual report
+ *   2. Download and extract PDF text
+ *   3. Use LLM to extract structured financials
+ *   4. Store results in local DB
+ *   5. Return the extracted metrics
  */
 export function createFinancialMetrics(model: string) {
     return async (query: string) => {
@@ -91,13 +96,71 @@ export function createFinancialMetrics(model: string) {
             };
         }
 
-        return {
-            symbol,
-            message: `Found annual report from ${annualReport.date}. Extraction will begin shortly.`,
-            reportUrl: annualReport.link,
-            title: annualReport.title,
-            instruction: `Extract metrics from this PDF: ${annualReport.link}`
-        };
+        // Full extraction pipeline
+        console.log(`Found annual report: "${annualReport.title}" (${annualReport.date}). Extracting...`);
+
+        try {
+            // Step 1: Extract text from PDF
+            const { text, warning } = await extractTextFromPdf(annualReport.link);
+
+            if (warning) {
+                console.warn(`PDF warning for ${symbol}: ${warning}`);
+            }
+
+            if (!text || text.length < 50) {
+                return {
+                    symbol,
+                    message: `Annual report PDF for ${symbol} could not be parsed (possibly a scanned document).`,
+                    warning,
+                    reportUrl: annualReport.link,
+                };
+            }
+
+            // Step 2: LLM extracts structured metrics
+            const extraction = await extractFinancialsWithLlm(text, model);
+
+            // Step 3: Store in DB
+            const metricsToSave = [];
+            for (const period of extraction.periods) {
+                const periodLabel = period.reporting_period;
+                const entries = Object.entries(period).filter(
+                    ([key]) => key !== 'reporting_period'
+                );
+
+                for (const [metric, value] of entries) {
+                    if (value !== null && value !== undefined) {
+                        metricsToSave.push({
+                            symbol,
+                            metric,
+                            value: String(value),
+                            period: periodLabel,
+                        });
+                    }
+                }
+            }
+
+            if (metricsToSave.length > 0) {
+                await FundamentalRepository.saveFundamentals(metricsToSave);
+                console.log(`Saved ${metricsToSave.length} metrics for ${symbol} to DB.`);
+            }
+
+            return {
+                symbol,
+                company: extraction.company_name,
+                ticker: extraction.ticker,
+                periods: extraction.periods,
+                source: annualReport.link,
+                date: annualReport.date,
+            };
+        } catch (error) {
+            console.error(`Failed to extract metrics for ${symbol}:`, error);
+            return {
+                symbol,
+                message: `Found annual report but failed to extract metrics. Error: ${error instanceof Error ? error.message : String(error)}`,
+                reportUrl: annualReport.link,
+                title: annualReport.title,
+            };
+        }
     };
 }
 

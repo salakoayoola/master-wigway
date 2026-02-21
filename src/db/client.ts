@@ -30,11 +30,22 @@ export async function getDb(): Promise<Database> {
 
 /**
  * Initialize the database schema.
+ * Creates all required tables if they don't already exist.
  */
 export async function initDb() {
   const sqlite = await getDb();
 
-  // Prices table
+  // --- Companies table ---
+  await sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS companies (
+      ticker TEXT PRIMARY KEY,
+      name TEXT,
+      sector TEXT,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+    )
+  `);
+
+  // --- Prices table ---
   await sqlite.exec(`
     CREATE TABLE IF NOT EXISTS prices (
       symbol TEXT NOT NULL,
@@ -48,7 +59,7 @@ export async function initDb() {
     )
   `);
 
-  // Fundamentals table
+  // --- Legacy fundamentals table (kept for backward compatibility) ---
   await sqlite.exec(`
     CREATE TABLE IF NOT EXISTS fundamentals (
       symbol TEXT NOT NULL,
@@ -57,6 +68,31 @@ export async function initDb() {
       period TEXT,
       timestamp INTEGER NOT NULL,
       PRIMARY KEY (symbol, metric, period)
+    )
+  `);
+
+  // --- Annual financials table ---
+  await sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS annual_financials (
+      ticker TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      metric TEXT NOT NULL,
+      value TEXT,
+      timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      PRIMARY KEY (ticker, year, metric)
+    )
+  `);
+
+  // --- Quarterly financials table ---
+  await sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS quarterly_financials (
+      ticker TEXT NOT NULL,
+      quarter TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      metric TEXT NOT NULL,
+      value TEXT,
+      timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      PRIMARY KEY (ticker, quarter, year, metric)
     )
   `);
 
