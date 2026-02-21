@@ -51,9 +51,9 @@ interface ModelOpts {
 type ModelFactory = (name: string, opts: ModelOpts) => BaseChatModel;
 
 function getApiKey(envVar: string): string {
-  const apiKey = process.env[envVar];
-  if (!apiKey) {
-    throw new Error(`[LLM] ${envVar} not found in environment variables`);
+  const apiKey = process.env[envVar]?.trim().replace(/^['"]|['"]$/g, '');
+  if (!apiKey || apiKey.startsWith('your-')) {
+    throw new Error(`[LLM] ${envVar} is not set. Add a valid key to your .env file.`);
   }
   return apiKey;
 }

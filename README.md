@@ -12,6 +12,7 @@ Master Wigway is an autonomous financial research agent specifically adapted for
 - [✅ Prerequisites](#-prerequisites)
 - [💻 How to Install](#-how-to-install)
 - [🚀 How to Run](#-how-to-run)
+- [🎛️ CLI Commands](#-cli-commands)
 - [📊 How to Evaluate](#-how-to-evaluate)
 - [🐛 How to Debug](#-how-to-debug)
 - [📱 How to Use with WhatsApp](#-how-to-use-with-whatsapp)
@@ -30,21 +31,21 @@ Master Wigway takes complex questions about Nigerian stocks and turns them into 
 - **Nigerian DCF Scenarios**: Valuation models adapted for Nigerian risk-free rates (FGN bonds) and market risk premiums.
 - **Self-Reflecting Agent**: Constantly validates its findings against multiple sources (Nairametrics, Proshare, official filings).
 
-[![Twitter Follow](https://img.shields.io/twitter/follow/virattt?style=social)](https://twitter.com/virattt) [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?style=social&logo=discord)](https://discord.gg/jpGHv2XB6T)
-
-<img width="1042" height="638" alt="Screenshot 2026-02-18 at 12 21 25 PM" src="https://github.com/user-attachments/assets/2a6334f9-863f-4bd2-a56f-923e42f4711e" />
+<img width="1042" height="638" alt="Screenshot" src="https://github.com/user-attachments/assets/2a6334f9-863f-4bd2-a56f-923e42f4711e" />
 
 
 ## ✅ Prerequisites
 
 - [Bun](https://bun.com) runtime (v1.0 or higher)
-- OpenAI API key (get [here](https://platform.openai.com/api-keys))
-- Financial Datasets API key (get [here](https://financialdatasets.ai))
-- Exa API key (get [here](https://exa.ai)) - optional, for web search
+- At least one LLM API key (Google Gemini recommended — get [here](https://aistudio.google.com/apikey))
+
+**Optional API keys:**
+- [Exa](https://exa.ai) or [Tavily](https://tavily.com) — for web search / news
+- [Perplexity](https://perplexity.ai) — alternative search provider
+
+You do **not** need an OpenAI or Financial Datasets API key — Wigway uses free NGX data sources.
 
 #### Installing Bun
-
-If you don't have Bun installed, you can install it using curl:
 
 **macOS/Linux:**
 ```bash
@@ -65,8 +66,8 @@ bun --version
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/virattt/dexter.git
-cd dexter
+git clone https://github.com/salakoayoola/master-wigway.git
+cd master-wigway
 ```
 
 2. Install dependencies with Bun:
@@ -79,27 +80,19 @@ bun install
 # Copy the example environment file
 cp env.example .env
 
-# Edit .env and add your API keys (if using cloud providers)
-# OPENAI_API_KEY=your-openai-api-key
-# ANTHROPIC_API_KEY=your-anthropic-api-key (optional)
-# GOOGLE_API_KEY=your-google-api-key (optional)
-# XAI_API_KEY=your-xai-api-key (optional)
-# OPENROUTER_API_KEY=your-openrouter-api-key (optional)
-
-# Institutional-grade market data for agents; AAPL, NVDA, MSFT are free
-# FINANCIAL_DATASETS_API_KEY=your-financial-datasets-api-key
-
-# (Optional) If using Ollama locally
-# OLLAMA_BASE_URL=http://127.0.0.1:11434
-
-# Web Search (Exa preferred, Tavily fallback)
+# Edit .env and add your API key(s)
+# At minimum, set one LLM key:
+# GOOGLE_API_KEY=your-google-ai-api-key
+#
+# Optional search providers:
 # EXASEARCH_API_KEY=your-exa-api-key
+# PERPLEXITY_API_KEY=your-perplexity-api-key
 # TAVILY_API_KEY=your-tavily-api-key
 ```
 
 ## 🚀 How to Run
 
-Run Dexter in interactive mode:
+Run Wigway in interactive mode:
 ```bash
 bun start
 ```
@@ -109,16 +102,58 @@ Or with watch mode for development:
 bun dev
 ```
 
+## 🎛️ CLI Commands
+
+Once Wigway is running, you can use these commands in the input prompt:
+
+| Command | Description |
+|---------|-------------|
+| `/model` | Switch LLM provider and model (Google, Anthropic, OpenAI, etc.) |
+| `exit` or `quit` | Exit the CLI |
+| `Esc` | Cancel current agent execution or model selection |
+| `Ctrl+C` | Force quit |
+
+### Switching Models
+
+Type `/model` to open the provider selector. You can choose from:
+
+| Provider | Models | API Key |
+|----------|--------|---------|
+| **Google** | Gemini 3 Flash, Gemini 3 Pro | `GOOGLE_API_KEY` |
+| **Anthropic** | Sonnet 4.6, Opus 4.6 | `ANTHROPIC_API_KEY` |
+| **OpenAI** | GPT 5.2, GPT 4.1 | `OPENAI_API_KEY` |
+| **xAI** | Grok 4, Grok 4.1 Fast Reasoning | `XAI_API_KEY` |
+| **Moonshot** | Kimi K2.5 | `MOONSHOT_API_KEY` |
+| **DeepSeek** | DeepSeek V3, DeepSeek R1 | `DEEPSEEK_API_KEY` |
+| **OpenRouter** | Any model (type name) | `OPENROUTER_API_KEY` |
+| **Ollama** | Local models | No key needed |
+
+Your selection is saved to `~/.master-wigway/settings.json` and persists across sessions.
+
+### Available Tools
+
+Wigway has access to these tools for research:
+
+| Tool | Description |
+|------|-------------|
+| `ngx_search` | Live NGX stock prices from ngxgroup.com |
+| `ngx_metrics` | Financial metrics extracted from annual reports |
+| `read_disclosures` | Corporate disclosures and filings from NGX |
+| `web_search` | Web search via Exa/Tavily/Perplexity |
+| `web_fetch` | Fetch and parse any web page |
+| `browser` | Full browser for complex web interactions |
+| `skill` | Specialized workflows (e.g., DCF valuation) |
+
 ## 📊 How to Evaluate
 
-Dexter includes an evaluation suite that tests the agent against a dataset of financial questions. Evals use LangSmith for tracking and an LLM-as-judge approach for scoring correctness.
+Wigway includes an evaluation suite that tests the agent against a dataset of NGX financial questions. Evals use LangSmith for tracking and an LLM-as-judge approach for scoring correctness.
 
 **Run on all questions:**
 ```bash
 bun run src/evals/run.ts
 ```
 
-**Run on a random sample of data:**
+**Run on a random sample:**
 ```bash
 bun run src/evals/run.ts --sample 10
 ```
@@ -127,13 +162,13 @@ The eval runner displays a real-time UI showing progress, current question, and 
 
 ## 🐛 How to Debug
 
-Dexter logs all tool calls to a scratchpad file for debugging and history tracking. Each query creates a new JSONL file in `.dexter/scratchpad/`.
+Wigway logs all tool calls to a scratchpad file for debugging and history tracking. Each query creates a new JSONL file in `.master-wigway/scratchpad/`.
 
 **Scratchpad location:**
 ```
-.dexter/scratchpad/
-├── 2026-01-30-111400_9a8f10723f79.jsonl
-├── 2026-01-30-143022_a1b2c3d4e5f6.jsonl
+.master-wigway/scratchpad/
+├── 2026-02-21-111400_9a8f10723f79.jsonl
+├── 2026-02-21-143022_a1b2c3d4e5f6.jsonl
 └── ...
 ```
 
@@ -144,14 +179,12 @@ Each file contains newline-delimited JSON entries tracking:
 
 **Example scratchpad entry:**
 ```json
-{"type":"tool_result","timestamp":"2026-01-30T11:14:05.123Z","toolName":"get_income_statements","args":{"ticker":"AAPL","period":"annual","limit":5},"result":{...},"llmSummary":"Retrieved 5 years of Apple annual income statements showing revenue growth from $274B to $394B"}
+{"type":"tool_result","timestamp":"2026-02-21T11:14:05.123Z","toolName":"ngx_search","args":{"query":"DANGCEM"},"result":{...},"llmSummary":"Retrieved current price data for Dangote Cement showing close at ₦450.50"}
 ```
-
-This makes it easy to inspect exactly what data the agent gathered and how it interpreted results.
 
 ## 📱 How to Use with WhatsApp
 
-Chat with Dexter through WhatsApp by linking your phone to the gateway. Messages you send to yourself are processed by Dexter and responses are sent back to the same chat.
+Chat with Wigway through WhatsApp by linking your phone to the gateway. Messages you send to yourself are processed by Wigway and responses are sent back to the same chat.
 
 **Quick start:**
 ```bash
@@ -162,7 +195,7 @@ bun run gateway:login
 bun run gateway
 ```
 
-Then open WhatsApp, go to your own chat (message yourself), and ask Dexter a question.
+Then open WhatsApp, go to your own chat (message yourself), and ask Wigway a question.
 
 For detailed setup instructions, configuration options, and troubleshooting, see the [WhatsApp Gateway README](src/gateway/channels/whatsapp/README.md).
 
@@ -174,7 +207,7 @@ For detailed setup instructions, configuration options, and troubleshooting, see
 4. Push to the branch
 5. Create a Pull Request
 
-**Important**: Please keep your pull requests small and focused.  This will make it easier to review and merge.
+**Important**: Please keep your pull requests small and focused. This will make it easier to review and merge.
 
 
 ## 📄 License

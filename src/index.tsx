@@ -13,7 +13,6 @@ async function start() {
     } catch (error) {
         console.error('Failed to initialize database:', error);
     }
-    const model = process.env.OPENAI_MODEL || 'gemini-3-flash-preview';
 }
 
 await start();

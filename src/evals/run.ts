@@ -154,7 +154,7 @@ async function target(inputs: { question: string }): Promise<{ answer: string }>
 }
 
 // ============================================================================
-// Correctness evaluator - LLM-as-judge using gpt-5.2
+// Correctness evaluator - LLM-as-judge using gemini-3-flash-preview
 // ============================================================================
 
 const EvaluatorOutputSchema = z.object({
