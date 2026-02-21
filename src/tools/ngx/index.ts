@@ -1,7 +1,12 @@
 import { fetchNgxPrices, NgxPrice } from './prices.js';
 import { PriceRepository } from '../../db/repositories/price-repo.js';
+import { searchNgxDisclosures } from './disclosure-scraper.js';
+import { extractTextFromPdf } from './pdf-parser.js';
+import { FundamentalRepository } from '../../db/repositories/fundamental-repo.js';
 
 export * from './prices.js';
+export * from './disclosure-scraper.js';
+export * from './pdf-parser.js';
 
 /**
  * Modern financial_search implementation for NGX.
@@ -48,20 +53,54 @@ export function createFinancialSearch(model: string) {
     };
 }
 
+/**
+ * Fetches metrics from DB or triggers the parsing pipeline.
+ */
 export function createFinancialMetrics(model: string) {
     return async (query: string) => {
-        return { message: "NGX Metrics tool is currently under construction. Use ngx_search for prices." };
+        const symbol = query.toUpperCase().trim();
+
+        // Check DB first
+        const cached = FundamentalRepository.getFundamentals(symbol);
+        if (cached.length > 0) {
+            return cached;
+        }
+
+        console.log(`No metrics found for ${symbol} in DB. Searching disclosures...`);
+
+        // Find latest annual report
+        const disclosures = await searchNgxDisclosures(symbol);
+        const annualReport = disclosures.find(d =>
+            d.title.toUpperCase().includes('ANNUAL REPORT') ||
+            d.title.toUpperCase().includes('AUDITED FINANCIAL')
+        );
+
+        if (!annualReport) {
+            return {
+                message: `Could not find an annual report for ${symbol} in recent disclosures.`,
+                disclosures: disclosures.slice(0, 3)
+            };
+        }
+
+        return {
+            symbol,
+            message: `Found annual report from ${annualReport.date}. Extraction will begin shortly.`,
+            reportUrl: annualReport.link,
+            title: annualReport.title,
+            instruction: `Extract metrics from this PDF: ${annualReport.link}`
+        };
     };
 }
 
 export function createReadFilings(model: string) {
     return async (query: string) => {
-        return { message: "NGX Disclosure tool is currently under construction. Please visit ngxgroup.com/exchange/data/company-disclosures/" };
+        const symbol = query.toUpperCase().trim();
+        const disclosures = await searchNgxDisclosures(symbol);
+        return disclosures;
     };
 }
 
 // These will be implemented in subsequent slices
-export * from './pdf-parser.js';
 export * from './fundamentals.js';
 export * from './news.js';
 export * from './ratios.js';
