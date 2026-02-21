@@ -1,5 +1,7 @@
 import { Container, ProcessTerminal, Spacer, Text, TUI } from '@mariozechner/pi-tui';
-import { config as dotenvConfig } from 'dotenv';
+import { parse as parseDotenv } from 'dotenv';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type {
   AgentEvent,
   ApprovalDecision,
@@ -223,8 +225,18 @@ export async function runCli() {
       return;
     }
 
-    // Hot-reload environment variables before every run
-    dotenvConfig({ override: true });
+    // Hot-reload environment variables silently before every run to avoid breaking the TUI
+    try {
+      const envPath = path.resolve(process.cwd(), '.env');
+      if (fs.existsSync(envPath)) {
+        const parsed = parseDotenv(fs.readFileSync(envPath, 'utf8'));
+        for (const [key, value] of Object.entries(parsed)) {
+          process.env[key] = value;
+        }
+      }
+    } catch (err) {
+      // Ignore read errors silently
+    }
 
     await inputHistory.saveMessage(query);
     inputHistory.resetNavigation();
