@@ -1,5 +1,3 @@
-import { parseHTML } from 'linkedom';
-
 export interface NgxDisclosure {
     symbol: string;
     type: string;
@@ -9,16 +7,16 @@ export interface NgxDisclosure {
 }
 
 /**
- * Scrapes the NGX disclosures portal for a specific company or keywords.
- * Default searches for 'AUDITED FINANCIAL STATEMENT' or 'ANNUAL REPORT'.
+ * Scrapes the NGX disclosures portal using its internal SharePoint REST API.
  */
 export async function searchNgxDisclosures(query: string = ''): Promise<NgxDisclosure[]> {
-    const url = 'https://ngxgroup.com/exchange/data/corporate-disclosures/';
+    const url = "https://doclib.ngxgroup.com/_api/Web/Lists/GetByTitle('XFinancial_News')/items/?$select=URL,Modified,Created,CompanyName,CompanySymbol,InternationSecIN,Type_of_Submission&$orderby=Created%20desc&$Top=1000";
 
     try {
         const response = await fetch(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'Accept': 'application/json;odata=verbose',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         });
 
@@ -26,29 +24,17 @@ export async function searchNgxDisclosures(query: string = ''): Promise<NgxDiscl
             throw new Error(`Failed to fetch NGX disclosures: ${response.statusText}`);
         }
 
-        const html = await response.text();
-        const { document } = parseHTML(html);
+        const json = await response.json();
+        const items: any[] = json.d?.results || json.value || [];
 
-        // Selector identified during research
-        const table = document.querySelector('table#latestdiclosuresLanding');
-        if (!table) {
-            // It might be loaded via AJAX/DataTables, but let's try initial HTML
-            return [];
-        }
-
-        const rows = Array.from(table.querySelectorAll('tbody tr'));
         const disclosures: NgxDisclosure[] = [];
 
-        for (const row of rows) {
-            const cols = row.querySelectorAll('td');
-            if (cols.length < 3) continue;
-
-            const symbol = cols[0].textContent?.trim() || '';
-            const titleLink = cols[1].querySelector('a');
-            const title = titleLink?.textContent?.trim() || '';
-            const link = titleLink?.getAttribute('href') || '';
-            const date = cols[2].textContent?.trim() || '';
-            const type = cols[3]?.textContent?.trim() || '';
+        for (const item of items) {
+            const symbol = item.CompanySymbol?.trim() || '';
+            const title = item.URL?.Description?.trim() || '';
+            const link = item.URL?.Url || '';
+            const date = item.Created || item.Modified || '';
+            const type = item.Type_of_Submission?.trim() || '';
 
             if (query && !symbol.toLowerCase().includes(query.toLowerCase()) && !title.toLowerCase().includes(query.toLowerCase())) {
                 continue;
@@ -65,7 +51,7 @@ export async function searchNgxDisclosures(query: string = ''): Promise<NgxDiscl
 
         return disclosures;
     } catch (error) {
-        console.error('Error searching NGX disclosures:', error);
-        throw error;
+        console.error('Error fetching NGX disclosures:', error);
+        return [];
     }
 }
