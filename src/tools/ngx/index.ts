@@ -1,14 +1,41 @@
-import { fetchNgxPrices } from './prices.js';
+import { fetchNgxPrices, NgxPrice } from './prices.js';
+import { PriceRepository } from '../../db/repositories/price-repo.js';
 
 export * from './prices.js';
 
 /**
  * Modern financial_search implementation for NGX.
- * Wraps the price scraper for now.
+ * Uses SQLite as a cache layer with 1-hour shelf life.
  */
 export function createFinancialSearch(model: string) {
+    const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
     return async (query: string) => {
-        const prices = await fetchNgxPrices();
+        let prices: NgxPrice[] = [];
+
+        // Try getting from DB first
+        const cached = PriceRepository.getAllLatestPrices();
+
+        const isStale = (cached.length === 0) ||
+            (Date.now() - (cached[0]?.timestamp || 0) > CACHE_TTL_MS);
+
+        if (isStale) {
+            console.log('NGX Price cache stale or missing. Fetching live data...');
+            try {
+                prices = await fetchNgxPrices();
+                PriceRepository.savePrices(prices);
+            } catch (error) {
+                console.error('Failed to fetch live prices, falling back to cache if available:', error);
+                if (cached.length > 0) {
+                    prices = cached;
+                } else {
+                    throw error;
+                }
+            }
+        } else {
+            console.log('Using cached NGX prices from local storage.');
+            prices = cached;
+        }
 
         // Simple filter for the query if it's a ticker
         const tickerMatch = query.toUpperCase().match(/\b[A-Z]{3,10}\b/g);
