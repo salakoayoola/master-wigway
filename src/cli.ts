@@ -225,18 +225,8 @@ export async function runCli() {
       return;
     }
 
-    // Hot-reload environment variables silently before every run to avoid breaking the TUI
-    try {
-      const envPath = path.resolve(process.cwd(), '.env');
-      if (fs.existsSync(envPath)) {
-        const parsed = parseDotenv(fs.readFileSync(envPath, 'utf8'));
-        for (const [key, value] of Object.entries(parsed)) {
-          process.env[key] = value;
-        }
-      }
-    } catch (err) {
-      // Ignore read errors silently
-    }
+    // Environment variables are now hot-reloaded safely inside getApiKey() directly from the .env file.
+    // We avoid mutating process.env here as it causes internal fetch deadlocks in Bun.
 
     await inputHistory.saveMessage(query);
     inputHistory.resetNavigation();

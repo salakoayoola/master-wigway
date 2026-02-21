@@ -50,8 +50,26 @@ interface ModelOpts {
 
 type ModelFactory = (name: string, opts: ModelOpts) => BaseChatModel;
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { parse as parseDotenv } from 'dotenv';
+
 function getApiKey(envVar: string): string {
-  const apiKey = process.env[envVar]?.trim().replace(/^['"]|['"]$/g, '');
+  // Hot-reload: First try to read directly from the .env file on disk
+  // This avoids mutating process.env, which is known to cause fetch deadlocks in Bun
+  let rawKey: string | undefined;
+  try {
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const parsed = parseDotenv(fs.readFileSync(envPath, 'utf8'));
+      rawKey = parsed[envVar];
+    }
+  } catch (err) {
+    // Ignore read errors silently
+  }
+
+  // Fallback to initial process.env if not found in file
+  const apiKey = (rawKey ?? process.env[envVar])?.trim().replace(/^['"]|['"]$/g, '');
   if (!apiKey || apiKey.startsWith('your-')) {
     throw new Error(`[LLM] ${envVar} is not set. Add a valid key to your .env file.`);
   }
@@ -216,7 +234,9 @@ export async function callLlm(prompt: string, options: CallLlmOptions = {}): Pro
   if (provider.id === 'anthropic') {
     // Anthropic: use explicit messages with cache_control for prompt caching (~90% savings)
     const messages = buildAnthropicMessages(finalSystemPrompt, prompt);
+    console.log(`[callLlm] Invoking Anthropic model...`);
     result = await withRetry(() => runnable.invoke(messages, invokeOpts), provider.displayName);
+    console.log(`[callLlm] Anthropic model returned.`);
   } else {
     // Other providers: use ChatPromptTemplate (OpenAI/Gemini have automatic caching)
     const promptTemplate = ChatPromptTemplate.fromMessages([
@@ -224,8 +244,11 @@ export async function callLlm(prompt: string, options: CallLlmOptions = {}): Pro
       ['user', '{prompt}'],
     ]);
     const chain = promptTemplate.pipe(runnable);
+    console.log(`[callLlm] Invoking ${provider.displayName} model...`);
     result = await withRetry(() => chain.invoke({ prompt }, invokeOpts), provider.displayName);
+    console.log(`[callLlm] ${provider.displayName} model returned.`);
   }
+  console.log(`[callLlm] Extracting usage...`);
   const usage = extractUsage(result);
 
   // If no outputSchema and no tools, extract content from AIMessage

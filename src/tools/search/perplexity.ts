@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { parse as parseDotenv } from 'dotenv';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { formatToolResult } from '../types.js';
@@ -21,8 +24,22 @@ interface PerplexityCompletionResponse {
   search_results?: PerplexitySearchResult[] | null;
 }
 
+function getEnvSafely(envVar: string): string | undefined {
+  let rawKey: string | undefined;
+  try {
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const parsed = parseDotenv(fs.readFileSync(envPath, 'utf8'));
+      rawKey = parsed[envVar];
+    }
+  } catch (err) {
+    // Ignore read errors silently
+  }
+  return rawKey ?? process.env[envVar];
+}
+
 async function callPerplexity(query: string): Promise<PerplexityCompletionResponse> {
-  const apiKey = process.env.PERPLEXITY_API_KEY;
+  const apiKey = getEnvSafely('PERPLEXITY_API_KEY');
   if (!apiKey) {
     throw new Error('[Perplexity API] PERPLEXITY_API_KEY is not set');
   }

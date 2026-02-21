@@ -1,4 +1,7 @@
 import { type StructuredToolInterface, DynamicStructuredTool } from '@langchain/core/tools';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { parse as parseDotenv } from 'dotenv';
 import { z } from 'zod';
 import { formatToolResult } from './types.js';
 import { createFinancialSearch, createFinancialMetrics, createReadFilings } from './ngx/index.js';
@@ -100,20 +103,34 @@ export function getToolRegistry(model: string): RegisteredTool[] {
     },
   ];
 
+  let exaKey = process.env.EXASEARCH_API_KEY;
+  let perplexityKey = process.env.PERPLEXITY_API_KEY;
+  let tavilyKey = process.env.TAVILY_API_KEY;
+
+  try {
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const parsed = parseDotenv(fs.readFileSync(envPath, 'utf8'));
+      exaKey = parsed.EXASEARCH_API_KEY ?? exaKey;
+      perplexityKey = parsed.PERPLEXITY_API_KEY ?? perplexityKey;
+      tavilyKey = parsed.TAVILY_API_KEY ?? tavilyKey;
+    }
+  } catch (err) { }
+
   // Include web_search if Exa, Perplexity, or Tavily API key is configured (Exa → Perplexity → Tavily)
-  if (process.env.EXASEARCH_API_KEY) {
+  if (exaKey) {
     tools.push({
       name: 'web_search',
       tool: exaSearch,
       description: WEB_SEARCH_DESCRIPTION,
     });
-  } else if (process.env.PERPLEXITY_API_KEY) {
+  } else if (perplexityKey) {
     tools.push({
       name: 'web_search',
       tool: perplexitySearch,
       description: WEB_SEARCH_DESCRIPTION,
     });
-  } else if (process.env.TAVILY_API_KEY) {
+  } else if (tavilyKey) {
     tools.push({
       name: 'web_search',
       tool: tavilySearch,
