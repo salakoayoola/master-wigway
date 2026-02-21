@@ -1,12 +1,12 @@
-import { fetchNgxPrices, NgxPrice } from './prices.js';
-import { PriceRepository } from '../../db/repositories/price-repo.js';
-import { searchNgxDisclosures } from './disclosure-scraper.js';
-import { extractTextFromPdf } from './pdf-parser.js';
+import { fetchNgxPrices, ScrapedNgxPrice } from './prices';
+import { PriceRepository, NgxPrice } from '../../db/repositories/price-repo.js';
+import { searchNgxDisclosures } from './disclosure-scraper';
+import { extractTextFromPdf } from './pdf-parser';
 import { FundamentalRepository } from '../../db/repositories/fundamental-repo.js';
 
-export * from './prices.js';
-export * from './disclosure-scraper.js';
-export * from './pdf-parser.js';
+export * from './prices';
+export * from './disclosure-scraper';
+export * from './pdf-parser';
 
 /**
  * Modern financial_search implementation for NGX.
@@ -19,7 +19,7 @@ export function createFinancialSearch(model: string) {
         let prices: NgxPrice[] = [];
 
         // Try getting from DB first
-        const cached = PriceRepository.getAllLatestPrices();
+        const cached = await PriceRepository.getAllLatestPrices();
 
         const isStale = (cached.length === 0) ||
             (Date.now() - (cached[0]?.timestamp || 0) > CACHE_TTL_MS);
@@ -27,8 +27,17 @@ export function createFinancialSearch(model: string) {
         if (isStale) {
             console.log('NGX Price cache stale or missing. Fetching live data...');
             try {
-                prices = await fetchNgxPrices();
-                PriceRepository.savePrices(prices);
+                const scraped = await fetchNgxPrices();
+                prices = scraped.map(s => ({
+                    symbol: s.symbol,
+                    open: s.open,
+                    high: s.high,
+                    low: s.low,
+                    close: s.close,
+                    price_change: s.change,
+                    timestamp: Date.now()
+                }));
+                await PriceRepository.savePrices(prices);
             } catch (error) {
                 console.error('Failed to fetch live prices, falling back to cache if available:', error);
                 if (cached.length > 0) {
@@ -61,7 +70,7 @@ export function createFinancialMetrics(model: string) {
         const symbol = query.toUpperCase().trim();
 
         // Check DB first
-        const cached = FundamentalRepository.getFundamentals(symbol);
+        const cached = await FundamentalRepository.getFundamentals(symbol);
         if (cached.length > 0) {
             return cached;
         }
@@ -101,7 +110,7 @@ export function createReadFilings(model: string) {
 }
 
 // These will be implemented in subsequent slices
-export * from './fundamentals.js';
-export * from './news.js';
-export * from './ratios.js';
-export * from './company-profile.js';
+export * from './fundamentals';
+export * from './news';
+export * from './ratios';
+export * from './company-profile';

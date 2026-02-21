@@ -10,16 +10,16 @@ export type PinoLikeLogger = {
 };
 
 export function createSilentLogger(): PinoLikeLogger {
-  const noop = () => {};
+  const noop = () => { };
   const logger: PinoLikeLogger = {
     level: 'silent',
     child: () => logger,
     trace: noop,
     debug: noop,
     info: noop,
-    warn: noop,
-    error: noop,
-    fatal: noop,
+    warn: (...args: unknown[]) => console.warn('[WA-WARN]', ...args),
+    error: (...args: unknown[]) => console.error('[WA-ERROR]', ...args),
+    fatal: (...args: unknown[]) => console.error('[WA-FATAL]', ...args),
   };
   return logger;
 }

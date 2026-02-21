@@ -7,10 +7,14 @@ import { initDb } from './db/client.js';
 config({ quiet: true });
 
 // Initialize database
-try {
-    initDb();
-} catch (error) {
-    console.error('Failed to initialize database:', error);
+async function start() {
+    try {
+        await initDb();
+    } catch (error) {
+        console.error('Failed to initialize database:', error);
+    }
+    const model = process.env.OPENAI_MODEL || 'gpt-5.2';
 }
 
+await start();
 await runCli();

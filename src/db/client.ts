@@ -1,37 +1,41 @@
-import { Database } from 'bun:sqlite';
+import sqlite3 from 'sqlite3';
+import { open, Database } from 'sqlite';
 import { join } from 'path';
 import { homedir } from 'os';
 import { mkdirSync } from 'fs';
 
-const DB_DIR = join(homedir(), '.master-wigway');
+const DB_DIR = join(process.cwd(), 'storage');
 const DB_PATH = join(DB_DIR, 'financials.db');
 
 // Ensure directory exists
 try {
-    mkdirSync(DB_DIR, { recursive: true });
+  mkdirSync(DB_DIR, { recursive: true });
 } catch (err) {
-    // Ignore if exists
+  // Ignore if exists
 }
 
-let db: Database;
+let db: Database | null = null;
 
-export function getDb(): Database {
-    if (!db) {
-        db = new Database(DB_PATH);
-        // Enable WAL mode for better performance
-        db.exec('PRAGMA journal_mode = WAL;');
-    }
-    return db;
+export async function getDb(): Promise<Database> {
+  if (!db) {
+    db = await open({
+      filename: DB_PATH,
+      driver: sqlite3.Database
+    });
+    // Enable WAL mode for better performance
+    await db.exec('PRAGMA journal_mode = WAL;');
+  }
+  return db;
 }
 
 /**
  * Initialize the database schema.
  */
-export function initDb() {
-    const sqlite = getDb();
+export async function initDb() {
+  const sqlite = await getDb();
 
-    // Prices table
-    sqlite.exec(`
+  // Prices table
+  await sqlite.exec(`
     CREATE TABLE IF NOT EXISTS prices (
       symbol TEXT NOT NULL,
       open REAL,
@@ -44,8 +48,8 @@ export function initDb() {
     )
   `);
 
-    // Fundamentals table
-    sqlite.exec(`
+  // Fundamentals table
+  await sqlite.exec(`
     CREATE TABLE IF NOT EXISTS fundamentals (
       symbol TEXT NOT NULL,
       metric TEXT NOT NULL,
@@ -56,5 +60,5 @@ export function initDb() {
     )
   `);
 
-    console.log('Database initialized at:', DB_PATH);
+  console.log('Database initialized at:', DB_PATH);
 }

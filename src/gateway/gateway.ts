@@ -14,7 +14,7 @@ import { appendFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-const LOG_PATH = join(homedir(), '.master-wigway', 'gateway-debug.log');
+const LOG_PATH = join(process.cwd(), 'storage', 'gateway-debug.log');
 function debugLog(msg: string) {
   appendFileSync(LOG_PATH, `${new Date().toISOString()} ${msg}\n`);
 }
@@ -47,7 +47,7 @@ async function handleInbound(cfg: GatewayConfig, inbound: WhatsAppInboundMessage
   const bodyPreview = elide(inbound.body.replace(/\n/g, ' '), 50);
   console.log(`Inbound message ${inbound.from} (${inbound.chatType}, ${inbound.body.length} chars): "${bodyPreview}"`);
   debugLog(`[gateway] handleInbound from=${inbound.from} body="${inbound.body.slice(0, 30)}..."`);
-  
+
   const route = resolveRoute({
     cfg,
     channel: 'whatsapp',
@@ -68,14 +68,14 @@ async function handleInbound(cfg: GatewayConfig, inbound: WhatsAppInboundMessage
   // Start typing indicator loop to keep it alive during long agent runs
   const TYPING_INTERVAL_MS = 5000; // Refresh every 5 seconds
   let typingTimer: ReturnType<typeof setInterval> | undefined;
-  
+
   const startTypingLoop = async () => {
     await sendComposing({ to: inbound.replyToJid, accountId: inbound.accountId });
     typingTimer = setInterval(() => {
       void sendComposing({ to: inbound.replyToJid, accountId: inbound.accountId });
     }, TYPING_INTERVAL_MS);
   };
-  
+
   const stopTypingLoop = () => {
     if (typingTimer) {
       clearInterval(typingTimer);
@@ -106,7 +106,7 @@ async function handleInbound(cfg: GatewayConfig, inbound: WhatsAppInboundMessage
     });
     const durationMs = Date.now() - startedAt;
     debugLog(`[gateway] agent answer length=${answer.length}`);
-    
+
     // Stop typing loop before sending reply
     stopTypingLoop();
 

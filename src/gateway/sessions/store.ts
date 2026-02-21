@@ -15,7 +15,7 @@ export type SessionEntry = {
 export type SessionStore = Record<string, SessionEntry>;
 
 export function resolveSessionStorePath(agentId: string): string {
-  const base = process.env.DEXTER_SESSIONS_DIR ?? join(homedir(), '.master-wigway', 'sessions');
+  const base = process.env.DEXTER_SESSIONS_DIR ?? join(process.cwd(), 'storage', 'sessions');
   return join(base, agentId, 'sessions.json');
 }
 

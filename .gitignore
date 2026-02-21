@@ -29,3 +29,7 @@ financials.db
 
 # Brain
 .gemini/
+
+# Local Storage
+storage/
+tmp/

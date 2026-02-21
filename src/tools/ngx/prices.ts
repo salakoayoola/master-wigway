@@ -1,6 +1,6 @@
 import { parseHTML } from 'linkedom';
 
-export interface NgxPrice {
+export interface ScrapedNgxPrice {
     symbol: string;
     open: number;
     high: number;
@@ -14,7 +14,7 @@ export interface NgxPrice {
  * Fetches live equities price list from the NGX website.
  * URL: https://ngxgroup.com/exchange/data/equities-price-list/
  */
-export async function fetchNgxPrices(): Promise<NgxPrice[]> {
+export async function fetchNgxPrices(): Promise<ScrapedNgxPrice[]> {
     const url = 'https://ngxgroup.com/exchange/data/equities-price-list/';
 
     try {
@@ -38,7 +38,7 @@ export async function fetchNgxPrices(): Promise<NgxPrice[]> {
         }
 
         const rows = Array.from(table.querySelectorAll('tbody tr'));
-        const prices: NgxPrice[] = [];
+        const prices: ScrapedNgxPrice[] = [];
 
         for (const row of rows) {
             const cols = row.querySelectorAll('td');

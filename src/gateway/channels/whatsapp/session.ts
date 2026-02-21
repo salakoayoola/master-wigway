@@ -34,9 +34,13 @@ export async function createWaSocket(params: {
     version,
     logger,
     printQRInTerminal: params.printQr,
-    browser: [.master-wigway', 'cli', '1.0.0'],
+    browser: ['Ubuntu', 'Chrome', '20.0.04'],
     markOnlineOnConnect: false,
     syncFullHistory: false,
+    qrTimeout: 120000,
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 60000,
+    keepAliveIntervalMs: 30000,
   });
 
   // Backup credentials before each save

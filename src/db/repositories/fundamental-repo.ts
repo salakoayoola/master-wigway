@@ -11,43 +11,48 @@ export class FundamentalRepository {
     /**
      * Saves extracted fundamentals to the database.
      */
-    static saveFundamentals(fundamentals: FundamentalMetric[]) {
-        const db = getDb();
+    static async saveFundamentals(fundamentals: FundamentalMetric[]) {
+        const db = await getDb();
         const timestamp = Date.now();
 
-        const insert = db.prepare(`
-      INSERT OR REPLACE INTO fundamentals (symbol, metric, value, period, timestamp)
-      VALUES ($symbol, $metric, $value, $period, $timestamp)
-    `);
+        await db.exec('BEGIN TRANSACTION');
+        try {
+            const stmt = await db.prepare(`
+        INSERT OR REPLACE INTO fundamentals (symbol, metric, value, period, timestamp)
+        VALUES (?, ?, ?, ?, ?)
+      `);
 
-        const transaction = db.transaction((list: FundamentalMetric[]) => {
-            for (const item of list) {
-                insert.run({
-                    $symbol: item.symbol,
-                    $metric: item.metric,
-                    $value: item.value,
-                    $period: item.period,
-                    $timestamp: timestamp
-                });
+            for (const item of fundamentals) {
+                await stmt.run(
+                    item.symbol,
+                    item.metric,
+                    item.value,
+                    item.period,
+                    timestamp
+                );
             }
-        });
-
-        transaction(fundamentals);
+            await stmt.finalize();
+            await db.exec('COMMIT');
+        } catch (error) {
+            await db.exec('ROLLBACK');
+            throw error;
+        }
     }
 
     /**
      * Retrieves fundamentals for a specific symbol and period.
      */
-    static getFundamentals(symbol: string, period?: string): FundamentalMetric[] {
-        const db = getDb();
-        let query = 'SELECT * FROM fundamentals WHERE symbol = $symbol';
-        const params: any = { $symbol: symbol };
+    static async getFundamentals(symbol: string, period?: string): Promise<FundamentalMetric[]> {
+        const db = await getDb();
+        let query = 'SELECT * FROM fundamentals WHERE symbol = ?';
+        const params: any[] = [symbol];
 
         if (period) {
-            query += ' AND period = $period';
-            params.$period = period;
+            query += ' AND period = ?';
+            params.push(period);
         }
 
-        return db.query(query).all(params) as any[];
+        const rows = await db.all(query, ...params);
+        return rows as FundamentalMetric[];
     }
 }

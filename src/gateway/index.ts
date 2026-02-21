@@ -17,6 +17,11 @@ const SUPPRESSED_PREFIXES = [
   'Removing old closed session:',
   'Session already closed',
   'Session already open',
+  'message-ack',
+  'sending message',
+  'received message',
+  'uploading media',
+  'downloading media',
 ];
 
 const originalLog = console.log;

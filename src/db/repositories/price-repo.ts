@@ -1,57 +1,78 @@
 import { getDb } from '../client.js';
-import { NgxPrice } from '../../tools/ngx/prices.js';
+
+export interface NgxPrice {
+    symbol: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    price_change: number;
+    timestamp: number;
+}
 
 export class PriceRepository {
     /**
-     * Saves a list of prices to the database.
+     * Saves a list of ticker prices to the database.
      */
-    static savePrices(prices: NgxPrice[]) {
-        const db = getDb();
+    static async savePrices(prices: NgxPrice[]) {
+        const db = await getDb();
         const timestamp = Date.now();
 
-        const insert = db.prepare(`
-      INSERT OR REPLACE INTO prices (symbol, open, high, low, close, price_change, timestamp)
-      VALUES ($symbol, $open, $high, $low, $close, $change, $timestamp)
-    `);
+        // We use a transaction for efficiency
+        await db.exec('BEGIN TRANSACTION');
+        try {
+            const stmt = await db.prepare(`
+        INSERT OR REPLACE INTO prices (symbol, open, high, low, close, price_change, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
 
-        const transaction = db.transaction((priceList: NgxPrice[]) => {
-            for (const price of priceList) {
-                insert.run({
-                    $symbol: price.symbol,
-                    $open: price.open,
-                    $high: price.high,
-                    $low: price.low,
-                    $close: price.close,
-                    $change: price.change,
-                    $timestamp: timestamp
-                });
+            for (const price of prices) {
+                await stmt.run(
+                    price.symbol,
+                    price.open,
+                    price.high,
+                    price.low,
+                    price.close,
+                    price.price_change,
+                    timestamp
+                );
             }
-        });
-
-        transaction(prices);
+            await stmt.finalize();
+            await db.exec('COMMIT');
+        } catch (error) {
+            await db.exec('ROLLBACK');
+            throw error;
+        }
     }
 
     /**
-     * Gets the latest price for a specific symbol.
+     * Retrieves the latest price for a specific symbol.
      */
-    static getLatestPrice(symbol: string): any {
-        const db = getDb();
-        return db.query('SELECT * FROM prices WHERE symbol = $symbol ORDER BY timestamp DESC LIMIT 1')
-            .get({ $symbol: symbol });
+    static async getLatestPrice(symbol: string): Promise<NgxPrice | null> {
+        const db = await getDb();
+        const row = await db.get(
+            'SELECT * FROM prices WHERE symbol = ? ORDER BY timestamp DESC LIMIT 1',
+            symbol
+        );
+        return row as NgxPrice || null;
     }
 
     /**
-     * Gets all latest prices (most recent snapshot).
+     * Retrieves all latest prices (from the most recent scrape timestamp).
      */
-    static getAllLatestPrices(): any[] {
-        const db = getDb();
-        // Use a subquery to get the latest timestamp available across all symbols
-        // or group by symbol and pick the max timestamp.
-        return db.query(`
-      SELECT p.* FROM prices p
-      INNER JOIN (
-        SELECT symbol, MAX(timestamp) as max_ts FROM prices GROUP BY symbol
-      ) m ON p.symbol = m.symbol AND p.timestamp = m.max_ts
-    `).all();
+    static async getAllLatestPrices(): Promise<NgxPrice[]> {
+        const db = await getDb();
+        const latestTimestamp = await db.get('SELECT MAX(timestamp) as ts FROM prices');
+
+        if (!latestTimestamp || !latestTimestamp.ts) {
+            return [];
+        }
+
+        const rows = await db.all(
+            'SELECT * FROM prices WHERE timestamp = ?',
+            latestTimestamp.ts
+        );
+
+        return rows as NgxPrice[];
     }
 }
