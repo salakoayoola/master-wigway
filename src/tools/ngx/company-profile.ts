@@ -1,0 +1,1 @@
+export const fetchCompanyProfile = async () => ({});
