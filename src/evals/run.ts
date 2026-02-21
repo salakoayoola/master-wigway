@@ -141,7 +141,7 @@ function shuffleArray<T>(array: T[]): T[] {
 // ============================================================================
 
 async function target(inputs: { question: string }): Promise<{ answer: string }> {
-  const agent = Agent.create({ model: 'gpt-5.2', maxIterations: 10 });
+  const agent = Agent.create({ model: 'gemini-3-flash-preview', maxIterations: 10 });
   let answer = '';
 
   for await (const event of agent.run(inputs.question)) {
@@ -163,7 +163,7 @@ const EvaluatorOutputSchema = z.object({
 });
 
 const llm = new ChatOpenAI({
-  model: 'gpt-5.2',
+  model: 'gemini-3-flash-preview',
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -217,7 +217,7 @@ Evaluate and provide:
 function createEvaluationRunner(sampleSize?: number) {
   return async function* runEvaluation(): AsyncGenerator<EvalProgressEvent, void, unknown> {
     // Load and parse dataset
-    const csvPath = path.join(__dirname, 'dataset', 'ngx_agent.csv');
+    const csvPath = path.join(__dirname, 'dataset', 'finance_agent.csv');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
     let examples = parseCSV(csvContent);
     const totalCount = examples.length;
@@ -239,7 +239,7 @@ function createEvaluationRunner(sampleSize?: number) {
     yield {
       type: 'init',
       total: examples.length,
-      datasetName: sampleSize ? `finance_agent (sample ${sampleSize}/${totalCount})` : 'finance_agent',
+      datasetName: sampleSize ? `finance_agent(sample ${ sampleSize } / ${ totalCount })` : 'finance_agent',
     };
 
     // Check if dataset exists (only for full runs)
@@ -256,8 +256,8 @@ function createEvaluationRunner(sampleSize?: number) {
     // Create dataset if needed
     if (!dataset) {
       dataset = await client.createDataset(datasetName, {
-        description: sampleSize
-          ? `Finance agent evaluation (sample of ${sampleSize})`
+        description: sampleSize 
+          ? `Finance agent evaluation(sample of ${ sampleSize })`
           : 'Finance agent evaluation dataset',
       });
 

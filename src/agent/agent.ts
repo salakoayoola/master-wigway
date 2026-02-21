@@ -12,7 +12,7 @@ import { buildFinalAnswerContext } from './final-answer-context.js';
 import { AgentToolExecutor } from './tool-executor.js';
 
 
-const DEFAULT_MODEL = 'gpt-5.2';
+const DEFAULT_MODEL = 'gemini-3-flash-preview';
 const DEFAULT_MAX_ITERATIONS = 10;
 
 /**
@@ -119,7 +119,7 @@ export class Agent {
 
       // Build iteration prompt with full tool results (Anthropic-style)
       currentPrompt = buildIterationPrompt(
-        query, 
+        query,
         ctx.scratchpad.getToolResults(),
         ctx.scratchpad.formatToolUsageForPrompt()
       );
