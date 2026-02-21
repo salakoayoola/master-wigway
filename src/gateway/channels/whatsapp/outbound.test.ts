@@ -35,7 +35,7 @@ describe('whatsapp outbound strict allowlist', () => {
   });
 
   test('blocks sendMessage to non-allowlisted recipient', async () => {
-    const dir = mkdtempSync(join(tmpdir(), .master-wigway-outbound-'));
+    const dir = mkdtempSync(join(tmpdir(), 'master-wigway-outbound-'));
     const configPath = join(dir, 'gateway.json');
     let sendCount = 0;
     writeGatewayConfig(configPath, ['+15551234567']);
@@ -45,7 +45,7 @@ describe('whatsapp outbound strict allowlist', () => {
         sendCount += 1;
         return { key: { id: 'msg-1' } };
       },
-      sendPresenceUpdate: async () => {},
+      sendPresenceUpdate: async () => { },
     } as unknown as WaSocket;
     setActiveWebListener('default', sock);
 
@@ -64,7 +64,7 @@ describe('whatsapp outbound strict allowlist', () => {
   });
 
   test('blocks sendComposing to non-allowlisted recipient', async () => {
-    const dir = mkdtempSync(join(tmpdir(), .master-wigway-outbound-'));
+    const dir = mkdtempSync(join(tmpdir(), 'master-wigway-outbound-'));
     const configPath = join(dir, 'gateway.json');
     let presenceCount = 0;
     writeGatewayConfig(configPath, ['+15551234567']);

@@ -7,14 +7,14 @@ async function test() {
         initDb();
 
         const dummyPrices = [
-            { symbol: 'TEST_STOCK', open: 10, high: 12, low: 9, close: 11, change: 1, percentChange: 10 }
+            { symbol: 'TEST_STOCK', open: 10, high: 12, low: 9, close: 11, change: 1, percentChange: 10, price_change: 1, timestamp: Date.now() }
         ];
 
         console.log('Saving dummy price...');
         PriceRepository.savePrices(dummyPrices);
 
         console.log('Retrieving cached price...');
-        const cached = PriceRepository.getLatestPrice('TEST_STOCK');
+        const cached = await PriceRepository.getLatestPrice('TEST_STOCK');
         console.log('Retrieved:', cached);
 
         if (cached && cached.symbol === 'TEST_STOCK') {

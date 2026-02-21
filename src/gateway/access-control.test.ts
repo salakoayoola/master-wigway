@@ -14,7 +14,7 @@ describe('access control', () => {
   });
 
   test('records pairing request for unknown sender', () => {
-    const dir = mkdtempSync(join(tmpdir(), .master-wigway-pairing-'));
+    const dir = mkdtempSync(join(tmpdir(), 'master-wigway-pairing-'));
     const path = join(dir, 'whatsapp.json');
     process.env.DEXTER_PAIRING_PATH = path;
     try {
@@ -41,7 +41,7 @@ describe('access control', () => {
       groupPolicy: 'open',
       allowFrom: ['+15551234567'],
       groupAllowFrom: [],
-      reply: async () => {},
+      reply: async () => { },
     });
     expect(result.allowed).toBe(true);
     expect(result.isSelfChat).toBe(true);
@@ -59,7 +59,7 @@ describe('access control', () => {
       groupPolicy: 'open',
       allowFrom: ['*'],
       groupAllowFrom: [],
-      reply: async () => {},
+      reply: async () => { },
     });
     expect(result.allowed).toBe(false);
     expect(result.shouldMarkRead).toBe(false);
@@ -77,7 +77,7 @@ describe('access control', () => {
       groupPolicy: 'allowlist',
       allowFrom: ['*'],
       groupAllowFrom: ['+15551112222'],
-      reply: async () => {},
+      reply: async () => { },
     });
     expect(result.allowed).toBe(false);
   });
@@ -94,7 +94,7 @@ describe('access control', () => {
       groupPolicy: 'open',
       allowFrom: ['+15551234567'],
       groupAllowFrom: ['*'],
-      reply: async () => {},
+      reply: async () => { },
     });
     expect(result.allowed).toBe(false);
     expect(result.denyReason).toBe('group_blocked_self_chat_mode');
@@ -112,7 +112,7 @@ describe('access control', () => {
       groupPolicy: 'disabled',
       allowFrom: ['+15551234567'],
       groupAllowFrom: [],
-      reply: async () => {},
+      reply: async () => { },
     });
     expect(result.allowed).toBe(false);
     expect(result.denyReason).toBe('sender_not_self_in_self_chat_mode');

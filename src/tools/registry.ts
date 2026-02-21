@@ -1,3 +1,6 @@
+import { type StructuredToolInterface, DynamicStructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
+import { formatToolResult } from './types.js';
 import { createFinancialSearch, createFinancialMetrics, createReadFilings } from './ngx/index.js';
 import { exaSearch, perplexitySearch, tavilySearch } from './search/index.js';
 import { skillTool, SKILL_TOOL_DESCRIPTION } from './skill.js';
@@ -30,17 +33,44 @@ export function getToolRegistry(model: string): RegisteredTool[] {
   const tools: RegisteredTool[] = [
     {
       name: 'ngx_search',
-      tool: createFinancialSearch(model),
+      tool: new DynamicStructuredTool({
+        name: 'ngx_search',
+        description: FINANCIAL_SEARCH_DESCRIPTION,
+        schema: z.object({ query: z.string().describe('The search query or ticker symbol to look up') }),
+        func: async (input) => {
+          const fn = createFinancialSearch(model);
+          const result = await fn(input.query);
+          return formatToolResult(result);
+        },
+      }),
       description: FINANCIAL_SEARCH_DESCRIPTION,
     },
     {
       name: 'ngx_metrics',
-      tool: createFinancialMetrics(model),
+      tool: new DynamicStructuredTool({
+        name: 'ngx_metrics',
+        description: FINANCIAL_METRICS_DESCRIPTION,
+        schema: z.object({ query: z.string().describe('The company ticker symbol to get metrics for') }),
+        func: async (input) => {
+          const fn = createFinancialMetrics(model);
+          const result = await fn(input.query);
+          return formatToolResult(result);
+        },
+      }),
       description: FINANCIAL_METRICS_DESCRIPTION,
     },
     {
       name: 'read_disclosures',
-      tool: createReadFilings(model),
+      tool: new DynamicStructuredTool({
+        name: 'read_disclosures',
+        description: READ_FILINGS_DESCRIPTION,
+        schema: z.object({ query: z.string().describe('The company ticker symbol to get disclosures for') }),
+        func: async (input) => {
+          const fn = createReadFilings(model);
+          const result = await fn(input.query);
+          return formatToolResult(result);
+        },
+      }),
       description: READ_FILINGS_DESCRIPTION,
     },
     {
